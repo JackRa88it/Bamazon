@@ -18,7 +18,7 @@ connection.connect(function(err) {
 
 // connect and display table of items before prompting user input:
 function customerPrompt() {
-  connection.query("SELECT item_id AS ID, product_name AS Product, dept_name AS Department, price AS Price, stock_qty AS Stock FROM products", function(err, queryRes) {
+  connection.query("SELECT item_id AS ID, product_name AS Product, dept_name AS Department, price AS Price FROM products", function(err, queryRes) {
     if (err) throw err;
     console.table('Bamazon Catalog', queryRes);
     // prompt user:
