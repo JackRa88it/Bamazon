@@ -48,21 +48,21 @@ function managerPrompt() {
 };
 
 function viewProducts() {
-  connection.query("SELECT * FROM products", function(err, res) {
+  connection.query("SELECT products.id AS ID, products.name AS Product, departments.name AS Department, products.price AS Price, products.stock_qty AS 'In Stock' FROM products LEFT JOIN departments ON products.id_departments = departments.id ORDER BY products.id", function(err, res) {
     console.table('Products for sale', res);
     managerPrompt();
   });
 };
 
 function viewLowInventory() {
-  connection.query("SELECT * FROM products WHERE stock_qty <= 5", function(err, res) {
+  connection.query("SELECT products.id AS ID, products.name AS Product, departments.name AS Department, products.price AS Price, products.stock_qty AS 'In Stock' FROM products LEFT JOIN departments ON products.id_departments = departments.id WHERE products.stock_qty <= 5 ORDER BY products.id", function(err, res) {
     console.table('Low inventory', res);
     managerPrompt();
   });
 };
 
 function addInventory() {
-  connection.query("SELECT * FROM products", function(err, res) {
+  connection.query("SELECT products.id AS ID, products.name AS Product, departments.name AS Department, products.price AS Price, products.stock_qty AS 'In Stock' FROM products LEFT JOIN departments ON products.id_departments = departments.id ORDER BY products.id", function(err, res) {
     console.table('Inventory', res);
     if (err) throw err;
     inquirer.prompt([
@@ -81,7 +81,7 @@ function addInventory() {
       // check if id is a valid item
       var index = -1;
       for (var i = 0; i < res.length; i++) {
-        if (response.id == res[i].item_id){
+        if (response.id == res[i].ID){
           index = i;
           break;
         };
@@ -106,20 +106,20 @@ function addInventory() {
       }
       else {
         console.log('Please enter a valid item ID');
-        salesOrder();
+        managerPrompt();
       };
     });
   });
 };
 
-function transaction(type, productRecord, qty) {
+function transaction(type, queryRecord, qty) {
   // start with SO transaction type, then maybe PO, RMA, etc.
   orderQty = parseInt(qty);
   console.table(
     'Please review your ' + type + ':', 
     [
       {
-        Item: productRecord.product_name,
+        Item: queryRecord.Product,
         Quantity: orderQty,
       }
     ]
@@ -134,7 +134,7 @@ function transaction(type, productRecord, qty) {
     if (response.confirm) {
       console.log('Adding to stock...');
       // get the absolute most current stock_qty and then proceed with order:
-      connection.query("SELECT * FROM products WHERE ?", [{item_id: productRecord.item_id}], function(err, res) {
+      connection.query("SELECT * FROM products WHERE ?", [{id: queryRecord.ID}], function(err, res) {
         // NOTE: ERROR CATCH HERE WITH IF STATEMENT ON AVAILABLE QTY
         // catch the stock qty and subtract the order qty
         var updatedQty = res[0].stock_qty + orderQty;
@@ -145,7 +145,7 @@ function transaction(type, productRecord, qty) {
               stock_qty: updatedQty
             },
             {
-              item_id: res[0].item_id
+              id: res[0].id
             }
           ],
           function(err, res) {
@@ -185,39 +185,44 @@ function transactionEnd() {
   });
 }
 
+// BROKEN CURRENTLY (setting department by name)
+// make them add id_departments by using a list of dept names
 function addNewProduct() {
-  connection.query("SELECT * FROM products", function(err, res) {
-    inquirer.prompt([
-      {
-        name: 'name',
-        type: 'input',
-        message: 'Please enter a product name'
-      },
-      {
-        name: 'dept',
-        // make this a list based on the departments table
-        type: 'input',
-        message: 'Please enter a department name'
-      },
-      {
-        name: 'price',
-        type: 'input',
-        message: 'Please enter a unit price'
-      }
-    ]).then(function(response) {
-      connection.query("INSERT INTO products SET ?",
-        {
-          product_name: response.name,
-          dept_name: response.dept,
-          price: response.price
-        },
-        function(err, res) {
-          console.log(res.affectedRows + " Product added!\n");
-          transactionEnd();
-        }
-      );
-    });
-  });
+  console.log("this option is under maintenance...")
+  managerPrompt();
+  // connection.query("SELECT * FROM products", function(err, res) {
+  //   inquirer.prompt([
+  //     {
+  //       name: 'name',
+  //       type: 'input',
+  //       message: 'Please enter a product name'
+  //     },
+  //     {
+  //       name: 'dept',
+  //       // make this a list based on the departments table
+  //       // store matching department id as var foundDeptID
+  //       type: 'input',
+  //       message: 'Please enter a department name'
+  //     },
+  //     {
+  //       name: 'price',
+  //       type: 'input',
+  //       message: 'Please enter a unit price'
+  //     }
+  //   ]).then(function(response) {
+  //     connection.query("INSERT INTO products SET ?",
+  //       {
+  //         name: response.name,
+  //         id_departments: foundDeptID,
+  //         price: response.price
+  //       },
+  //       function(err, res) {
+  //         console.log(res.affectedRows + " Product added!\n");
+  //         transactionEnd();
+  //       }
+  //     );
+  //   });
+  // });
 };
 
 

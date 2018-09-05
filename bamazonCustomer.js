@@ -18,7 +18,7 @@ connection.connect(function(err) {
 
 // connect and display table of items before prompting user input:
 function customerPrompt() {
-  connection.query("SELECT item_id AS ID, product_name AS Product, dept_name AS Department, price AS Price, stock_qty FROM products", function(err, res) {
+  connection.query("SELECT products.id AS ID, products.name AS Product, departments.name AS Department, products.price AS Price FROM products LEFT JOIN departments ON products.id_departments = departments.id ORDER BY products.id", function(err, res) {
     if (err) throw err;
     console.table('Bamazon Catalog', res);
     // prompt user:
@@ -62,7 +62,7 @@ function salesOrder() {
       // check if id is a valid item
       var index = -1;
       for (var i = 0; i < res.length; i++) {
-        if (response.id == res[i].item_id){
+        if (response.id == res[i].id){
           index = i;
           break;
         };
@@ -101,15 +101,15 @@ function salesOrder() {
   });
 };
 
-function transaction(type, productRecord, qty) {
+function transaction(type, queryRecord, qty) {
   // start with SO transaction type, then maybe PO, RMA, etc.
   orderQty = parseInt(qty);
-  orderTotal = productRecord.price * orderQty;
+  orderTotal = queryRecord.price * orderQty;
   console.table(
     'Please review your order:', 
     [
       {
-        Item: productRecord.product_name,
+        Item: queryRecord.name,
         Quantity: orderQty,
         Subtotal: "$" + orderTotal
       }
@@ -126,20 +126,20 @@ function transaction(type, productRecord, qty) {
       console.log('Making purchase...');
 
       // get the absolute most current stock_qty and then proceed with purchase:
-      connection.query("SELECT * FROM products WHERE ?", [{item_id: productRecord.item_id}], function(err, res) {
+      connection.query("SELECT * FROM products WHERE ?", [{id: queryRecord.id}], function(err, res) {
         // NOTE: ERROR CATCH HERE WITH IF STATEMENT ON AVAILABLE QTY
         // catch the stock qty and subtract the order qty
         var updatedQty = res[0].stock_qty - orderQty;
-        var updatedSales = res[0].product_sales + orderTotal;
+        var updatedSales = res[0].sales + orderTotal;
         connection.query(
           "UPDATE products SET ? WHERE ?",
           [
             {
               stock_qty: updatedQty,
-              product_sales: updatedSales
+              sales: updatedSales
             },
             {
-              item_id: res[0].item_id
+              id: res[0].id
             }
           ],
           function(err, res) {

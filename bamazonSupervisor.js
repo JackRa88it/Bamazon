@@ -41,10 +41,10 @@ function supervisorPrompt() {
 };
 
 function viewSalesByDept() {
-  var query = "SELECT departments.dept_id AS 'Dept ID', departments.dept_name as Department, departments.overhead_costs AS Overhead, SUM(products.product_sales) AS Sales, SUM(products.product_sales)-departments.overhead_costs AS 'Profit/Loss'";
+  var query = "SELECT departments.id AS 'Dept ID', departments.name as Department, departments.overhead AS Overhead, SUM(products.sales) AS Sales, SUM(products.sales)-departments.overhead AS 'Profit/Loss'";
   query += " FROM departments";
-  query += " LEFT JOIN products ON departments.dept_name = products.dept_name";
-  query += " GROUP BY departments.dept_id";
+  query += " LEFT JOIN products ON departments.id = products.id_departments";
+  query += " GROUP BY departments.id";
   connection.query(query, function(err, res) {
       console.table('Sales by Department', res);
       supervisorPrompt();
@@ -68,8 +68,8 @@ function createDept() {
     ]).then(function(response) {
       connection.query("INSERT INTO departments SET ?",
         {
-          dept_name: response.name,
-          overhead_costs: response.overhead
+          name: response.name,
+          overhead: response.overhead
         },
         function(err, res) {
           console.log(res.affectedRows + " department added!\n");

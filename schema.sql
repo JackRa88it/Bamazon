@@ -3,18 +3,18 @@ CREATE DATABASE bamazon;
 USE bamazon;
 
 CREATE TABLE products (
-  item_id INT(10) AUTO_INCREMENT NOT NULL,
-  product_name VARCHAR(30) NULL,
-  dept_name VARCHAR(30) NULL,
+  id INT(10) AUTO_INCREMENT NOT NULL,
+  name VARCHAR(30) NULL,
+  id_departments INT(10) NULL,
   price INT(10) NULL,
   stock_qty INT(10) NULL,
-  PRIMARY KEY (item_id)
+  sales INT(10) NULL,
+  PRIMARY KEY (id)
 );
 
 CREATE TABLE departments (
-  dept_id INT(10) AUTO_INCREMENT NOT NULL,
-  dept_name VARCHAR(30) NULL,
-  overhead_costs INT(10) NULL,
-  product_sales INT(10) NULL,
-  PRIMARY KEY (dept_id)
+  id INT(10) AUTO_INCREMENT NOT NULL,
+  name VARCHAR(30) NULL,
+  overhead INT(10) NULL,
+  PRIMARY KEY (id)
 );
