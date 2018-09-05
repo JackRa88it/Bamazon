@@ -48,18 +48,22 @@ function managerPrompt() {
 };
 
 function viewProducts() {
-  connection.query("SELECT item_id AS ID, product_name AS Product, dept_name AS Department, price AS Price, stock_qty AS Stock FROM products", function(err, queryRes) {
-    console.table(queryRes);
+  connection.query("SELECT * FROM products", function(err, res) {
+    console.table('Products for sale', res);
     managerPrompt();
   });
 };
 
-// ^WORKING ABOVE^ //
+function viewLowInventory() {
+  connection.query("SELECT * FROM products WHERE stock_qty <= 5", function(err, res) {
+    console.table('Low inventory', res);
+    managerPrompt();
+  });
+};
 
-// connection.query("SELECT item_id AS ID, product_name AS Product, dept_name AS Department, price AS Price, stock_qty AS Stock FROM products", function(err, queryRes) {}
-
-function purchaseID() {
-  connection.query("SELECT item_id FROM products", function(err, queryRes) {
+function addInventory() {
+  connection.query("SELECT * FROM products", function(err, res) {
+    console.table('Inventory', res);
     if (err) throw err;
     inquirer.prompt([
       {
@@ -76,64 +80,47 @@ function purchaseID() {
     ]).then(function(response) {
       // check if id is a valid item
       var index = -1;
-      for (var i = 0; i < queryRes.length; i++) {
-        if (queryRes[i].item_id == response.id){
+      for (var i = 0; i < res.length; i++) {
+        if (response.id == res[i].item_id){
           index = i;
           break;
         };
       };
       if (index >= 0) {
-        // now check if qty is available
-        purchaseQty(response.id);
+        // now ask for qty
+        inquirer.prompt([
+          {
+            name: 'qty',
+            type: 'input',
+            message: 'Enter the quantity to add:',
+            // validate: function(input) {
+            //   if (typeof input === 'number') {
+            //     return true;
+            //   };
+            //   return false;
+            // }
+          }
+        ]).then(function(response) {
+            transaction('Stock Add', res[index], response.qty);
+        });
       }
       else {
         console.log('Please enter a valid item ID');
-        purchaseID();
+        salesOrder();
       };
     });
   });
 };
 
-function purchaseQty(id) {
-  connection.query("SELECT * FROM products WHERE ?", {item_id: id}, function(err, queryRes) {
-    if (err) throw err;
-    inquirer.prompt([
-      {
-        name: 'qty',
-        type: 'input',
-        message: 'Enter the quantity to purchase:',
-        // validate: function(input) {
-        //   if (typeof input === 'number') {
-        //     return true;
-        //   };
-        //   return false;
-        // }
-      }
-    ]).then(function(response) {
-      // check if qty is available
-      if (response.qty <= queryRes[0].stock_qty) {
-        transactionConfirm('Sales Order', queryRes, response.qty);
-      }
-      else {
-        console.log('That quantity is unavailable.');
-        // return to prompt, and maybe catch type errors differently
-        purchaseQty(id);
-      };
-    });
-  });
-};
-
-function transactionConfirm(type, queryRes, qty) {
+function transaction(type, productRecord, qty) {
   // start with SO transaction type, then maybe PO, RMA, etc.
   orderQty = parseInt(qty);
-  orderTotal = queryRes[0].price * orderQty;
   console.table(
-    'Please review your order:', 
+    'Please review your ' + type + ':', 
     [
       {
-        item: queryRes[0].product_name,
-        quantity: orderQty,
-        subtotal: "$" + orderTotal
+        Item: productRecord.product_name,
+        Quantity: orderQty,
       }
     ]
   );
@@ -141,16 +128,16 @@ function transactionConfirm(type, queryRes, qty) {
     {
       name: 'confirm',
       type: 'confirm',
-      message:'Proceed with purchase?'
+      message:'Proceed with adding stock?'
     }
   ]).then(function(response) {
     if (response.confirm) {
-      console.log('Making purchase...');
-
-      // get the absolute most current stock_qty and then proceed with purchase:
-      connection.query("SELECT * FROM products WHERE ?", [{item_id: queryRes[0].item_id}], function(err, res) {
+      console.log('Adding to stock...');
+      // get the absolute most current stock_qty and then proceed with order:
+      connection.query("SELECT * FROM products WHERE ?", [{item_id: productRecord.item_id}], function(err, res) {
+        // NOTE: ERROR CATCH HERE WITH IF STATEMENT ON AVAILABLE QTY
         // catch the stock qty and subtract the order qty
-        var updatedQty = res[0].stock_qty - orderQty;
+        var updatedQty = res[0].stock_qty + orderQty;
         connection.query(
           "UPDATE products SET ? WHERE ?",
           [
@@ -158,11 +145,11 @@ function transactionConfirm(type, queryRes, qty) {
               stock_qty: updatedQty
             },
             {
-              item_id: queryRes[0].item_id
+              item_id: res[0].item_id
             }
           ],
           function(err, res) {
-            console.log('Your order total was $' + orderTotal + ". Please check your email for order confirmation and tracking. HAH! Just kidding! This thing has zero email capabilities.");
+            console.log('Stock successfully added.');
             transactionEnd();
           }
         );
@@ -176,18 +163,18 @@ function transactionConfirm(type, queryRes, qty) {
   });
 };
 
-// provide a go back/quit option, which also lets users read their order confirmation before going back to managerPrompt() and dumping the whole table onto the console:
+// provide a go back/quit option, which also lets users read their order confirmation before going back to customerPrompt() and dumping the whole table onto the console:
 function transactionEnd() {
   inquirer.prompt([
     {
       name: 'action',
       type: 'list',
-      choices: ['View products', 'Get me out of here'],
+      choices: ['Main menu', 'Get me out of here'],
       message: 'What would you like to do?'
     }
   ]).then(function(response) {
     switch (response.action) {
-      case 'View products':
+      case 'Main menu':
         managerPrompt();
         break;
       case 'Get me out of here':
@@ -197,6 +184,41 @@ function transactionEnd() {
     };
   });
 }
+
+function addNewProduct() {
+  connection.query("SELECT * FROM products", function(err, res) {
+    inquirer.prompt([
+      {
+        name: 'name',
+        type: 'input',
+        message: 'Please enter a product name'
+      },
+      {
+        name: 'dept',
+        // make this a list based on the departments table
+        type: 'input',
+        message: 'Please enter a department name'
+      },
+      {
+        name: 'price',
+        type: 'input',
+        message: 'Please enter a unit price'
+      }
+    ]).then(function(response) {
+      connection.query("INSERT INTO products SET ?",
+        {
+          product_name: response.name,
+          dept_name: response.dept,
+          price: response.price
+        },
+        function(err, res) {
+          console.log(res.affectedRows + " Product added!\n");
+          transactionEnd();
+        }
+      );
+    });
+  });
+};
 
 
 
