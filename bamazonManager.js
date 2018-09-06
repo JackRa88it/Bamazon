@@ -1,6 +1,8 @@
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 const cTable = require('console.table');
+var departmentsTable;
+var departmentsList;
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -188,43 +190,44 @@ function transactionEnd() {
 // BROKEN CURRENTLY (setting department by name)
 // make them add id_departments by using a list of dept names
 function addNewProduct() {
-  console.log("this option is under maintenance...")
-  managerPrompt();
-  // connection.query("SELECT * FROM products", function(err, res) {
-  //   inquirer.prompt([
-  //     {
-  //       name: 'name',
-  //       type: 'input',
-  //       message: 'Please enter a product name'
-  //     },
-  //     {
-  //       name: 'dept',
-  //       // make this a list based on the departments table
-  //       // store matching department id as var foundDeptID
-  //       type: 'input',
-  //       message: 'Please enter a department name'
-  //     },
-  //     {
-  //       name: 'price',
-  //       type: 'input',
-  //       message: 'Please enter a unit price'
-  //     }
-  //   ]).then(function(response) {
-  //     connection.query("INSERT INTO products SET ?",
-  //       {
-  //         name: response.name,
-  //         id_departments: foundDeptID,
-  //         price: response.price
-  //       },
-  //       function(err, res) {
-  //         console.log(res.affectedRows + " Product added!\n");
-  //         transactionEnd();
-  //       }
-  //     );
-  //   });
-  // });
+  connection.query("SELECT * FROM departments", function(err, res) {
+    departmentsTable = res;
+    
+    inquirer.prompt([
+      {
+        name: 'name',
+        type: 'input',
+        message: 'Please enter a product name'
+      },
+      {
+        name: 'dept',
+        // make this a list based on the departments table
+        // store matching department id as var foundDeptID
+        type: 'input',
+        message: 'Please enter a department name'
+      },
+      {
+        name: 'price',
+        type: 'input',
+        message: 'Please enter a unit price'
+      }
+    ]).then(function(response) {
+      connection.query("INSERT INTO products SET ?",
+        {
+          name: response.name,
+          id_departments: foundDeptID,
+          price: response.price
+        },
+        function(err, res) {
+          console.log(res.affectedRows + " Product added!\n");
+          transactionEnd();
+        }
+      );
+    });
+  });
 };
 
 
 
 // NOTES
+// make dbase schema require unique department/product names

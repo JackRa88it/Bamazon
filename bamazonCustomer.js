@@ -57,6 +57,7 @@ function salesOrder() {
         //   };
         //   return false;
         // }
+        // TRY PARSE INT
       }
     ]).then(function(response) {
       // check if id is a valid item
