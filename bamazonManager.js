@@ -1,8 +1,6 @@
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 const cTable = require('console.table');
-var departmentsTable;
-var departmentsList;
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -191,8 +189,11 @@ function transactionEnd() {
 // make them add id_departments by using a list of dept names
 function addNewProduct() {
   connection.query("SELECT * FROM departments", function(err, res) {
-    departmentsTable = res;
-    
+    var deptList = [];
+    var deptID;
+    for (i = 0; i < res.length; i++) {
+      deptList.push(res[i].name);
+    };
     inquirer.prompt([
       {
         name: 'name',
@@ -202,8 +203,9 @@ function addNewProduct() {
       {
         name: 'dept',
         // make this a list based on the departments table
-        // store matching department id as var foundDeptID
-        type: 'input',
+        // store matching department id as var deptID
+        type: 'list',
+        choices: deptList,
         message: 'Please enter a department name'
       },
       {
@@ -212,10 +214,16 @@ function addNewProduct() {
         message: 'Please enter a unit price'
       }
     ]).then(function(response) {
+      // take the dept name they chose and find the matching id
+      for (i = 0; i < res.length; i++) {
+        if (response.dept === res[i].name) {
+          deptID = res[i].id;
+        };
+      };
       connection.query("INSERT INTO products SET ?",
         {
           name: response.name,
-          id_departments: foundDeptID,
+          id_departments: deptID,
           price: response.price
         },
         function(err, res) {
